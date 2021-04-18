@@ -1,0 +1,81 @@
+********************* 安装 ************************
+systemctl set-default multi-user.target
+yum install -y yum-utils device-mapper-persistent-data lvm2
+yum-config-manager --add-repo https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/centos/docker-ce.repo
+yum install -y docker-ce docker-ce-cli containerd.io
+systemctl start docker
+docker run hello-world
+docker info
+
+********************* 登录 ************************
+docker login docker.io
+//网页登录：https://hub.docker.com/
+
+
+********************* 镜像 image ************************
+拉取镜像： docker pull alpine
+拉取镜像（完整路径）： docker pull docker.io/library/alpine:3.10.1
+查看已有镜像： docker images
+给镜像打tag： docker tag b7b28af77ffe docker.io/bluestacksage/alpine:v3.10.1
+推送镜像： docker push docker.io/bluestacksage/alpine:v3.10.1
+删除镜像(本地)： docker rmi docker.io/bluestacksage/alpine:v3.10.1
+删除镜像(本地)： docker rmi b7b28af77ffe
+删除镜像(本地)(强制)： docker rmi -f b7b28af77ffe
+
+
+********************* 容器 container ************************
+列出container（正在运行的）： docker ps
+列出container（所有的）： docker ps -a
+启动(本地没有则先pull)： docker run hello-world
+启动并进入container： docker run -it docker.io/bluestacksage/alpine:v3.10.1 /bin/sh
+启动并后台运行container(指定name为myalphine)： docker run -d --name myalphine docker.io/bluestacksage/alpine:v3.10.1 /bin/sleep 300
+启动并转发端口(宿主机:81 转发至 container:80): docker run --name mynginx -d -p 81:80 nginx
+启动,转发端口并挂载目录: docker run --name mynginx -d -p 81:80 nginxdocker run --name mynginx_with_baidu -d -p 82:80 -v /root/html:/usr/share/nginx/html nginx
+启动,传递环境变量(E_OPTS=abcd)并打印所有环境变量: docker run -e E_OPTS=abcd alpine printenv
+检查container: docker inspect 27af8a850bee|grep nginx
+进入container(此处container ID为5d3cc1b7979f): docker exec -it 5d3cc1b7979f /bin/sh
+停止container(此处container ID为5d3cc1b7979f): docker stop 5d3cc1b7979f
+启动container(此处container ID为5d3cc1b7979f,container ID不变): docker start 5d3cc1b7979f
+启动container(此处container name为myphine,container name曾创建过): docker start myphine
+删除container: docker rm myphine
+删除container(强制): docker rm -f myphine
+查看日志: docker logs 0b98d8d5de82
+
+导出为tar包: docker save b7b28af77ffe > alpine:v3.10.1_backup.tar
+从tar包导入: docker load < alpine:v3.10.1_backup.tar (还需要再加回tag: docker tag b7b28af77ffe bluestacksage/alphine:v3.10.1)
+
+container提交固化为image: docker commit -p 27af8a850bee bluestacksage/mynginx_with_baidu
+
+
+********************* dockerfile ************************
+vi /data/dockerfile/Dockerfile
+
+FROM nginx
+USER nginxusr
+WORKDIR /usr/share/nginx/html
+ADD /root/html/index.html /usr/share/nginx/html/index.html
+EXPOSE 80
+ENV BINDVERSION=9.11.4
+RUN yum install bind-$BINDVERSION -y
+ENTRYPOINT /entrypoint.sh
+
+
+docker build . -t docker.io/bluestacksage/nginx:lastest_with_dockerfile
+docker run --rm -d --name nginx123 bluestacksage/nginx:lastest_with_dockerfile
+docker exec -it --name nginx123 bluestacksage/nginx:lastest_with_dockerfile /bin/bash
+
+
+
+
+********************* apt镜像源 ************************
+tee /etc/apt/sources.list << EOF
+deb http://mirrors.cloud.aliyuncs.com/debian stable main contrib non-free
+deb http://mirrors.cloud.aliyuncs.com/debian stable-proposed-updates main contrib non-free
+deb http://mirrors.cloud.aliyuncs.com/debian stable-updates main contrib non-free
+deb-src http://mirrors.cloud.aliyuncs.com/debian stable main contrib non-free
+deb-src http://mirrors.cloud.aliyuncs.com/debian stable-proposed-updates main contrib non-free
+deb-src http://mirrors.cloud.aliyuncs.com/debian stable-updates main contrib non-free
+EOF
+
+
+
